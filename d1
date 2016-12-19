@@ -83,7 +83,8 @@ s2 = c(9, 2, 4, 4, 5, 5, 6, 6, 8, 2)
 t.test(s1,s2,alternative="greater", paired=TRUE)
 # Interpret the results p values, t statistics
 
-### ***********************
+#Greater: If we had written: t.test (a, b, paired = TRUE, alt = "greater"), we asked R to check whether the mean of the values contained in the vector a is greater than the mean of the values contained in the vector b. In light of the previous result, we can suspect that the p-value will be much smaller than 0.05, and in fact:
+#Less: With this syntax we asked R to check whether the mean of the values contained in the vector a is less of the mean of the values contained in the vector b. In response, we obtained a p-value well above 0.05, which leads us to conclude that we can reject the null hypothesis H0 in favor of the alternative hypothesis H1: the new training has made substantial improvements to the team.  
 
 
 ##### Linear Regression  
