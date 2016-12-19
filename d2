@@ -1,0 +1,564 @@
+#Forecasting is used to estimate future value of a time series. There are many different forecasting techniques available
+
+#A few of them are :
+  
+#Moving Average
+#Weighted Moving Average
+#Simple Exponential Smoothing
+#Double Exponential Smoothing/ Winter Method
+#$Triple Exponential Smoothing Holt Winter Method
+#And some of the other advanced Time Series Methods such as ARIMA, GARCH and ARCH
+
+#Main focus will is to explain and use Simple and Weighted Moving Average Methods of Forecasting a time series values.
+
+#Moving Average and Weighted Moving Average
+#We are going to use forecast package for most of the discussion in this blog. You require to install and load the forecast package if not done already.
+
+
+
+## install
+#install.package("forecast")
+## load 
+library(forecast)
+
+#Data Source
+#Yearly income levels across 2006 and 2012 years have used for moving average forecasting. Source : http://www.bls.gov/cex/2012/standard/multiyr.xls
+
+
+Income <- c(44649,  47507,  49430,  51128,  54453,  58712,60533,  63091,    63563,  62857,  62481,  63685,  65596)
+Year <- c(2000,  2001,  2002,   2003,   2004,   2005,2006,  2007,   2008,   2009,   2010,   2011,   2012)
+df <- data.frame(Year,Income)
+class(df)
+names(df)
+str(df)
+class(df$Income)
+
+
+#When we are Moving Average (MA), we can try different order of moving average (MA) . For example
+#MA(2): average for the last 2 period data
+#MA(5): average for the last 5 data points
+#Higher is the order of Moving Average, smoother is forecasted series.
+
+#Plot Data
+#One of the firsts and sometime the most important step in forecasting is to plot the data.
+#Plot the series and see the pattern.
+
+plot(x=df$Year,
+     y=df$Income,
+     xlab="Year",   # x axis lable
+     ylab="Income", # y axis label
+     main="Income Across Years", ## Chart title
+     pch=20,  # point character
+     col="red", # color of points,
+     type="b"   # both points and line connecting
+)
+
+####*******************************************************
+# Moving Average Function and Calculation
+##*********************************************************
+
+smv <- function (s, order){
+  if(is.na(order)==T){
+    order <-2
+  }
+  
+  sm <- filter(s,
+                  rep(1,order),
+                  sides=1
+  )
+  sm <- sm/order
+}
+
+## Moving Average with order 2
+sma.inc.2 <-smv(df$Income,2)
+
+## Moving Average with Order 5
+sma.inc.5 <-smv(df$Income,5)
+
+
+### Plotting Moving Average Series and Actual Series
+
+par(mfrow=c(1,3)) ## split into 3 blocks
+
+plot(x=df$Year,
+     y=df$Income,
+     xlab="Year",   # x axis lable
+     ylab="Income", # y axis label
+     main="Income Across Years", ## Chart title
+     pch=20,  # point character
+     col="red", # color of points,
+     type="b"   # both points and line connecting
+)
+plot(x=df$Year,
+     y=sma.inc.2,
+     xlab="Year",   # x axis lable
+     ylab="MA(2) Moving Average Income", # y axis label
+     main="MA(2): Income Across Years", ## Chart title
+     pch=20,  # point character
+     col="red", # color of points,
+     type="b"   # both points and line connecting
+)
+plot(x=df$Year,
+     y=sma.inc.5,
+     xlab="Year",   # x axis lable
+     ylab="MA(5): Moving Average Income", # y axis label
+     main="MA(5) Income Across Years", ## Chart title
+     pch=20,  # point character
+     col="red", # color of points,
+     type="b"   # both points and line connecting
+)
+
+##***************************************************************
+#Weighted Moving Average (WMV)
+##***************************************************************
+#In a simple moving average, same weights are assigned (implicitly) to all the time series points. In a practical scenario, user may want to assiged higher weights to a current time series values. In that scenario, a weighted moving average can be used for forecasting.
+
+#Weighted Moving Average (WMV) Calculations
+
+#Below is custom R function to get a vector of Weighted Moving Averages for a input series.
+#wmv has 3 parameters
+
+#s : Input vector which has a time series values
+#weights : Input vectors with weights. The weights will be standdardise inside the function. Length of weights vector should be same as order of the moving average
+#order : order of moving average
+
+wmv <- function (s, weights, order){
+  ## default order
+  if(is.na(order)==T){
+    order <-2
+  }
+
+    ## check if weight vector and order are same
+  if(length(weights)!=order){
+    stop("Different order and weight counts") 
+  }
+  wm.out <- numeric()
+  for (i in 1:(length(s)-order+1)){
+    
+    w.sum <- sum(weights)# weight sum
+    w <- weights/w.sum # standardize weights
+    s1 <- s[i:(i+order-1)]
+    wm <- as.vector(weighted.mean(s1,w) )    
+    wm.out[i] <-wm
+  }
+  # add fist elements as missing..
+  m <- numeric()
+  for(p in 1:(order-1)){
+    m[p] <- NA
+  }
+  wm.out <- append(m,wm.out)
+  wm.out
+}
+
+## Moving Average with order 2
+v2 <- c(1,2)
+wma.inc.2 <-wmv(df$Income,v2,2)
+## Moving Average with Order 5
+v5 <- c(1:5)
+wma.inc.5 <-wmv(df$Income,v5,5)
+
+# Plotting Weighted Moving Average Series and Actual Series
+
+par(mfrow=c(1,3)) ## split into 3 blocks
+
+plot(x=df$Year,
+     y=df$Income,
+     xlab="Year",   # x axis lable
+     ylab="Income", # y axis label
+     main="Income Across Years", ## Chart title
+     pch=20,  # point character
+     col="green", # color of points,
+     type="b",   # both points and line connecting
+     lwd=2  #line width
+)
+plot(x=df$Year,
+     y=wma.inc.2,
+     xlab="Year",   # x axis lable
+     ylab="WMA(2) Weighted MA ", # y axis label
+     main="WMA(2): Weighted MA Income", ## Chart title
+     pch=20,  # point character
+     col="red", # color of points,
+     type="b",   # both points and line connecting
+     lwd=2  #line width
+)
+plot(x=df$Year,
+     y=wma.inc.5,
+     xlab="Year",   # x axis lable
+     ylab="WMA(5): Weighted MA", # y axis label
+     main="WMA(5) Weighted MA Income", ## Chart title
+     pch=20,  # point character
+     col="blue", # color of points,
+     type="b",   # both points and line connecting,
+     lwd=2 #line width
+     
+)
+
+## *******************************************************
+## Exponential moving average
+## *******************************************************
+
+TTR::EMA(1:20, n=1,  ratio=2/(5+1))
+N1 <- TTR::EMA(1:20, n=3,  ratio=2/(5+1))
+
+
+TTR::EMA(1:20, n=3,  ratio=2/(5+1))
+
+TTR::EMA(1:20, n=5,  ratio=2/(5+1))
+TTR::EMA(1:20, n=5)
+
+N2 <- TTR::EMA(1:20, n=5,  ratio=2/(5+1))
+
+plot(N1, pch=20,  # point character
+     col="green", # color of points,
+     type="b",   # both points and line connecting,
+     lwd=2 #line width
+)
+
+
+
+
+## *********************************************************8
+# Statistics Practise
+# Statistical Analysis ----------------------------------------------------
+
+# Hypothesis Testing ---------------
+
+# Chi Square Tests : Data set survey(MASS). Smoking and Exercise Level. 
+# Test the hypothesis whether the students smoking habit is
+#indepdent of their exercises level at .05 level.
+
+x = c(1,2,3,4,5,6,7)
+y = c(10,20,30,40,55,65,75)
+
+tbl = table(x,y)
+tbl
+
+chisq.test(tbl)
+
+# Simple Linear Regression
+
+lm1 = lm(y ~ x)
+coeffs = coefficients(lm1) 
+coeffs
+x1 = 9
+y1 = coeffs[1] + coeffs[2]* 9
+y1  
+
+predict(lm1, data.frame(x=9)) # predict
+
+lm1.stdres = rstandard(lm1)
+qqnorm(lm1.stdres)
+
+
+# t tests
+s1 = c(6, 2, 2, 2, 3, 2, 7, 5, 7, 8)
+s2 = c(9, 2, 4, 4, 5, 5, 6, 6, 8, 2)
+t.test(s1,s2,alternative="greater", paired=TRUE)
+
+# Interpret the results p values, t statistics
+
+
+# Time Series
+library(TTR)
+data(ttrc)
+str(ttrc)
+ttrc
+
+# Simple Moving Average
+sma.3 = SMA(ttrc[,'Close'],3) # 10 period
+head(sma.3,n=10)
+
+# Weighted Moving Average
+wma.30 = WMA(ttrc[,'Close'],wts=c(1:30),30)
+head(wma.30,n=31)
+
+
+#Exponential Moving Average
+ema.25 = EMA(ttrc[,'Open'],n=25)
+head(ema.25,n=26)
+
+library(TTR)
+x=1:20
+
+# Simple 3 pd Moving Average
+sma.3 = SMA(x,3)
+head(sma.3)
+
+# Weighted Mean 3 day 
+wma.3 = WMA(x,wts=c(.2,.3,.5),n=3)
+head(x)
+head(wma.3)
+
+# Exponential Weighted Mean
+ema.2 = EMA(x,wilder=T,2)
+head(ema.2)
+?EMA
+
+library(xts)
+temp = ts(x,start = c(2000),end=c(2011),  frequency = 1)
+#temp = ts(x,start = c(2000,1),end=c(2012,3),  frequency = 12)
+
+temp
+?ts
+
+plot(temp)
+print(temp)
+
+
+
+
+
+
+
+### ***************************************************************
+## how to draw noraml distribution
+## why is the important of distribution???  (density)
+
+rnorm(100)
+round(rnorm(100))
+
+## sound off the rnorm 100 value meaning taking .xx off
+round(rnorm(100) * 10)
+plot(rnorm(100))
+
+## Assigning value to a variable
+x <- round(rnorm(100) * 10)
+
+x
+
+## Taking mean and Standard Deviation
+meanx <- mean(x)
+sdx <- sd(x)
+
+meanx ; sdx
+
+## Taking a denstiy, giving the x value and finding the y value, getting the probabailty value
+
+density(x)
+plot(density(x))
+
+
+## dnorm is to find the DENSITY value
+dnorm(0)
+dnorm(1)
+dnorm(2)
+
+dnorm(0,mean = meanx,sd=sdx)
+dnorm(20,mean = meanx,sd=sdx)
+
+## abline is to draw a line h for horiozntal and v is for vertical
+abline(h=0.00377, col="blue")
+abline(v=20,col="red")
+abline(h=0.0434, col="blue")
+abline(v=0,col="red")
+
+abline(h=(dnorm(20,mean = meanx,sd=sdx)),v=20, col="green", lwd=3)
+
+## Now to find the Probabailty of the AREA UNDER the CURVE. Cumilative area. its given by prnorm
+pnorm(0, mean=meanx, sd=sdx)
+
+abline(h=(pnorm(0,mean = meanx,sd=sdx)),v=0, col="green", lwd=3)
+
+## to clear the plot
+plot.new()
+plot(density(x))
+
+pnorm(-20,mean=meanx,sd=sdx)
+## to find from the right side
+pnorm(-20,mean=meanx,sd=sdx,lower.tail = F)
+
+## the total value is 1 so if we have one side value the other side value will be 1 - prnorm
+
+1-pnorm(-20,mean=meanx,sd=sdx)
+
+abline(v=(1-pnorm(-20,mean=meanx,sd=sdx)),col="blue",lwd=3)
+
+## Qnorm is for the Quantile  Note: q and p are opposite to each other
+qnorm(1)
+qnorm(0.95)
+qnorm(0.9,mean = meanx,sd=sdx)
+qnorm(0.6,mean = meanx,sd=sdx)
+
+
+
+## *********************************
+## Normal Distribution
+
+
+plot.new()
+
+
+## Generate Random Nos from ND
+rnorm(100)
+rnorm(100)*10
+round(rnorm(100)*10)
+x=round(rnorm(100)*10)
+meanx = mean(x)
+sdx = sd(x) plot
+plot(density(x))
+
+
+dnorm() ##returns the probability density function or pdf.
+dnorm(1)
+dnorm(-2)
+dnorm(3) ##height of the normal curve at some value along the x-axis.
+dnorm(1,mean=meanx,sd=sdx)
+dnorm(10,mean=meanx,sd=sdx)
+dnorm(10,mean=meanx,sd=sdx)
+abline(h=dnorm(-10,mean=meanx,sd=sdx))
+abline(h=dnorm(20,mean=meanx,sd=sdx))
+
+
+##Cumulative Freq / Area under the curve default - lower tail. area from left side
+pnorm(0)
+pnorm(0,mean=meanx, sd=sdx)
+pnorm(10,mean=meanx, sd=sdx)
+pnorm(100,mean=meanx, sd=sdx)
+pnorm(30,mean=meanx, sd=sdx)
+
+
+abline(v=30,col=4,lwd=2)
+abline(v=-25,col=4,lwd=2)
+abline(v=meanx - 1 * sdx,col=4,lwd=3)
+## Upper Tail
+pnorm(15,mean=meanx, sd=sdx,lower.tail = F)
+abline(v=15,col=6,lwd=2) ## area to the right of 15
+
+
+plot.new()
+plot(density(x))
+
+
+##Quantiles
+qnorm(.95)
+qnorm(.10) ## 10% values
+abline(v=qnorm(.95,mean=meanx,sd=sdx),col="red",lwd=4)
+## 95% values upto this point from left 60% values from right
+qnorm(.60,mean=meanx,sd=sdx,lower.tail = F)
+abline(v=qnorm(.60,mean=meanx,sd=sdx,lower.tail = F),col="red",lwd=5)
+qnorm(c(.025,.975),mean=meanx,sd=sdx)
+abline(v=qnorm(c(.025,.975),mean=meanx,sd=sdx),col="blue",lwd=5)
+
+
+## ***************************************************************************
+## to calculate Binomial Distribution Ques. 3 Binomialdistribution.pdf ans is 0.0169
+
+dbinom(4, size=6, prob=0.2) +
+  dbinom(5, size=6, prob=0.2) +
+  dbinom(6, size=6, prob=0.2) 
+
+
+## Q4 Part 1 not more than 3 will be busy : 0.99973
+dbinom(0, size=6, prob=0.066667) +
+  dbinom(1, size=6, prob=0.066667) +
+  dbinom(2, size=6, prob=0.066667) +
+  dbinom(3, size=6, prob=0.066667) 
+## Part 2 at least 3 of them will be busy : 0.005083
+dbinom(3, size=6, prob=0.066667) +
+  dbinom(4, size=6, prob=0.066667) +
+  dbinom(5, size=6, prob=0.066667) +
+  dbinom(6, size=6, prob=0.066667) 
+
+## Q5 Part 1
+dbinom(4, size=15, prob=0.25) 
+## PArt 2 exactly 8: 0.0131
+dbinom(8, size=15, prob=0.25) 
+## Part three Feewer than 3: 0.2361
+dbinom(0, size=15, prob=0.25) +
+  dbinom(1, size=15, prob=0.25) +
+  dbinom(2, size=15, prob=0.25) 
+## Part 4 more than 5 : 0.1484
+dbinom(6, size=15, prob=0.25) + dbinom(7, size=15, prob=0.25) + dbinom(8, size=15, prob=0.25) + dbinom(9, size=15, prob=0.25) + dbinom(10, size=15, prob=0.25) +
+  dbinom(11, size=15, prob=0.25) + dbinom(12, size=15, prob=0.25) + dbinom(13, size=15, prob=0.25) + dbinom(14, size=15, prob=0.25) + dbinom(15, size=15, prob=0.25)
+
+
+# Ques 6 : Part 1: 0.9943
+dbinom(0, size=15, prob=0.12) + dbinom(2, size=15, prob=0.12) + dbinom(3, size=15, prob=0.12) +
+  dbinom(4, size=15, prob=0.12) + dbinom(5, size=15, prob=0.12) + dbinom(1, size=15, prob=0.12)
+
+
+
+## ***************************************************************************  
+## Poisson Distribution
+ppois(16, lambda=12)
+
+## Questio
+1-ppois(0, lambda=3, lower.tail=TRUE)
+
+x <- rpois(100,3)
+x
+plot(density(x))
+table(x)
+
+qpois(.95,3)
+1- dpois(0,3)
+abline(v=qpois(.95,3),col="blue")
+
+
+help("distribution")
+?rpois
+density
+
+
+## what is the probabailty of getting 6 larva will be found. check the y axis
+dpois(6,3)
+## for 3 and so on ...
+dpois(3,3)
+
+
+## Question If the light bulbs in a house fail according to a Poisson law, and over the last
+## 15 weeks there have been 5 failures, find the probability that there will not be
+## more than one failure next week
+
+dpois(1,0.33333,FALSE)
+
+## If there are twelve cars crossing a bridge per minute on average, find the probability of
+## having seventeen or more cars crossing the bridge in a particular minute.
+
+ppois(16,12,lower.tail = TRUE) ## The probability of having sixteen or less cars
+## crossing the bridge in a particular minute
+
+ppois(16,12,lower.tail = FALSE) ## Seventy or more probability
+
+## Question 7.6
+ppois(120,100)
+
+
+## Non Cumulative
+dpois(20,25) 
+
+## Cumulative
+ppois(35,40)
+
+
+
+## NOrmal Distribution  in theory we find the value of z and look at the table to find probability
+pnorm(9,7,2,lower.tail = TRUE) 
+
+## lower tail
+pnorm(9,7,2,lower.tail = FALSE)
+
+
+
+#################################################
+
+## T test formula when we have x value and/or y value
+
+tvalue <- c(0.593,0.142,0.329,0.691,0.231,0.793,0.519,0.392,0.418)
+meau <- 0.3
+
+t.test( tvalue,alternative = "greater", mu=meau)
+
+
+## Manual t test formula
+## x (sample mean) - meau(polpulation mean) / (Standard deviation/Sqroot(No of observations))
+t.value = (-10 / (50/sqrt(15)))
+t.value
+
+p.value = dt(t.value, df=15-1)
+p.value
+
+
+
+p.value = dt(-0.774596,df=14)
+p.value
